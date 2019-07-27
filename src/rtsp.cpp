@@ -1,5 +1,5 @@
-#include "rtsp.h"
-#include "utils/exception.h"
+#include "rtsp.hpp"
+#include "utils/exception.hpp"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -108,7 +108,7 @@ int RTSPServer::MainLoop(void) {
         if (ret == 0) break;
         ret = connect->handleData();
         if(ret < 0) {
-          throw ServerError("handle");
+          throw ServerError("handle", 0);
         } 
         ret = connect->writeText();
         if(ret < 0) {

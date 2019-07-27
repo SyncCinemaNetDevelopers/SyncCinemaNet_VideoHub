@@ -5,7 +5,7 @@ namespace vserver {
         const char* message;
         int code;
         public:
-        ServerError(const char* const &message, int code = 0);
+        ServerError(const char* const &message, int code);
         void print();
     };
 }

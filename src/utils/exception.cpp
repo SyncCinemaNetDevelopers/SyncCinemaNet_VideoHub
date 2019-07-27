@@ -1,4 +1,4 @@
-#include "exception.h"
+#include "exception.hpp"
 #include <iostream>
 #include <errno.h>
 #include <string.h>
@@ -6,7 +6,7 @@
 using namespace vserver;
 using namespace std;
 
-ServerError::ServerError(const char* const &message, int code = 0) {
+ServerError::ServerError(const char* const &message, int code) {
     this->message = message;
     this->code = 0;
 }

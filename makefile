@@ -8,7 +8,7 @@ OBJDIR = obj
 NAME = a.out
 
 all:
-	@echo 'run "make isntall" for start installation'
+	@echo 'run "make install" for start installation'
 	@echo 'run "make build" for build'
 	@echo 'run "make rmo" for remove all objects files after build'
 
@@ -25,7 +25,7 @@ makedirs:
 	$(CC) -c -I./$P $< -o $@
 
 compile: $(CPPOBJ) $(COBJ)
-	@$(CXX) $(CPPOBJ) $(COBJ) -o bin/$(NAME) && echo compile : succes
+	@$(CXX) $(CPPOBJ) $(COBJ) -o bin/$(NAME) && echo compile : success
 
 rmo:
-	@find ./ -name "*.o" | xargs rm && echo object remove : succes
+	@find ./ -name "*.o" | xargs rm && echo object remove : success
