@@ -10,6 +10,15 @@ static int startsWith(const char* s, const char* prefix) {
     }
 }
 
+// Check if String s ends with the given postfix
+static int endsWith(const char* s, const char* postfix) {
+    ssize_t len = strlen(s) - strlen(postfix);
+    if(len < 0)
+        return 0;
+    const char* end = s + len;
+    return !strcmp(end, postfix);
+}
+
 // Gets the length of the message
 static int getMessageLength(PRTSP_MESSAGE msg) {
     POPTION_ITEM current;
@@ -81,6 +90,9 @@ int parseRtspMessage(PRTSP_MESSAGE msg, char* rtspMessage, int length) {
     char* optDelim = " :\r\n";
     char typeFlag = TOKEN_OPTION;
 
+    // For case of request without any options
+    int opts = 0;
+
     // Put the raw message into a string we can use
     char* messageBuffer = malloc(length + 1);
     if (messageBuffer == NULL) {
@@ -142,15 +154,17 @@ int parseRtspMessage(PRTSP_MESSAGE msg, char* rtspMessage, int length) {
         // Response field - we don't care about it here
         statusStr = NULL;
     }
-    if (strcmp(protocol, "RTSP/1.0")) {
+    if (strcmp(protocol, "RTSP/1.1")) {
         exitCode = RTSP_ERROR_MALFORMED;
         goto ExitFailure;
     }
+
     // Parse remaining options
     while (token != NULL)
     {
         token = strtok(NULL, typeFlag == TOKEN_OPTION ? optDelim : end);
         if (token != NULL) {
+            ++opts;
             if (typeFlag == TOKEN_OPTION) {
                 opt = token;
             }
@@ -190,9 +204,17 @@ int parseRtspMessage(PRTSP_MESSAGE msg, char* rtspMessage, int length) {
                     break;
                 }
             }
+        } else if(opts == 0) {
+            // This message contains only one string
+            if (endsWith(rtspMessage, "\n\r\n")) {
+                // We've encountered the end of the message - mark it thus
+                messageEnded = 1;
+            }
+            break;
         }
         typeFlag ^= 1; // flip the flag
     }
+
     // If we never encountered the double CRLF, then the message is malformed!
     if (!messageEnded) {
         exitCode = RTSP_ERROR_MALFORMED;
