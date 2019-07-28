@@ -1,10 +1,19 @@
+#vscode configs and settings files
 .vscode
+
+#executable files
 *.exe
 *.out
+./bin
+
+#object files
+./obj/
+*.o
+*.obj
+
+#library files
 *.so
 *.dll
 *.a
 *.d
 *.lib
-*.o
-*.obj
