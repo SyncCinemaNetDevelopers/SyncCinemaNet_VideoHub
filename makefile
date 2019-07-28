@@ -1,14 +1,14 @@
 P = src
-CPPSRC = main.cpp rtsp.cpp utils/exception.cpp
+CPPSRC = $(patsubst ./src/%,%,$(shell ./configure CPPSRC))
 CPPOBJ = $(CPPSRC:.cpp=.o)
-CSRC = utils/rtsp-parser.c
+CSRC = $(patsubst ./src/%,%,$(shell ./configure CSRC))
 COBJ = $(CSRC:.c=.o)
 OBJDIR = obj
 OBJ = $(addprefix $(OBJDIR)/,$(CPPOBJ) $(COBJ))
 
 # this one must be empty
 TESTSSRC = 
-TESTS = options
+TESTS = $(patsubst ./test_%,%,$(shell ./configure TESTS))
 
 NAME = a.out
 
@@ -36,7 +36,7 @@ compile: $(OBJ)
 	@$(CXX) $(OBJ) -o bin/$(NAME) && echo compile : success
 
 rmo:
-	@find ./ -name "*.o" | xargs rm && echo object remove : success
+	@rm -R obj && echo object remove : success
 
 build_tests: compile_tests $(patsubst %,test_%,$(TESTS)) delete_aux_files
 	

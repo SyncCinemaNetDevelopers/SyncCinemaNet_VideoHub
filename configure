@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ "$1" == "CPPSRC" ]
+then
+    res=$(find ./src/ -name "*.cpp")
+    echo $res
+elif [ "$1" == "CSRC" ]
+then
+    res=$(find ./src/ -name "*.c")
+    echo $res
+elif [ "$1" == "TESTS" ]
+then
+    cd tests 
+    res=$(find . -name "test_*" -type d)
+    echo $res 
+else
+    echo Unknown variable $1
+    exit 1
+fi
