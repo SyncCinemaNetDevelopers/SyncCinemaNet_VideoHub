@@ -1,4 +1,4 @@
-#include "../../src/tests.hpp"
+#include "tests.hpp"
 
 using namespace vtests;
 
