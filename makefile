@@ -1,14 +1,14 @@
 P = src
-CPPSRC = main.cpp rtsp.cpp utils/exception.cpp
+CPPSRC = $(shell ./configure CPPSRC)
 CPPOBJ = $(CPPSRC:.cpp=.o)
-CSRC = utils/rtsp-parser.c
+CSRC = $(shell ./configure CSRC)
 COBJ = $(CSRC:.c=.o)
 OBJDIR = obj
 OBJ = $(addprefix $(OBJDIR)/,$(CPPOBJ) $(COBJ))
 
 # this one must be empty
 TESTSSRC = 
-TESTS = options
+TESTS = $(shell ./configure TESTS)
 
 NAME = a.out
 
@@ -36,7 +36,7 @@ compile: $(OBJ)
 	@$(CXX) $(OBJ) -o bin/$(NAME) && echo compile : success
 
 rmo:
-	@find ./ -name "*.o" | xargs rm && echo object remove : success
+	@rm -R obj && echo object remove : success
 
 build_tests: compile_tests $(patsubst %,test_%,$(TESTS)) delete_aux_files
 	
@@ -44,11 +44,10 @@ compile_tests:
 	find ./tests/src -name "*.cpp" > ./tests/src/srcs.txt
 
 test_%:
-	echo $@ : $* 
-	find ./tests/$@/src -name "*.cpp" > ./tests/$@/srcs.txt
-	$(eval TESTSSRC := $(shell cat ./tests/$@/srcs.txt) $(shell cat ./tests/src/srcs.txt))
-	$(CXX) $(TESTSSRC) -I./tests/$@ -I./tests/src -o ./tests/$@/$*.test;true
-	rm ./tests/$@/srcs.txt
+	@find ./tests/$@/src -name "*.cpp" > ./tests/$@/srcs.txt
+	@$(eval TESTSSRC := $(shell cat ./tests/$@/srcs.txt) $(shell cat ./tests/src/srcs.txt))
+	@$(CXX) $(TESTSSRC) -I./tests/$@ -I./tests/src -o ./tests/$@/$*.test && echo $*.test compile : success 
+	@rm ./tests/$@/srcs.txt; true
 
 delete_aux_files:
-	rm ./tests/src/srcs.txt
+	@rm ./tests/src/srcs.txt
