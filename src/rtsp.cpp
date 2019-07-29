@@ -1,4 +1,5 @@
 #include "rtsp.hpp"
+#include "auth.hpp"
 #include "utils/exception.hpp"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -65,19 +66,32 @@ int RTSPConnect::handleData() {
     2. Сделать получение и обрабтку данных от веб-API
     3. Добавить полезную нагрузку, сформированную в шаге 2
     */
+    FakeAuth* auth;
     const char* src = input.c_str();
     char* data = new char[strlen(src)];
+    char* user;
     strcpy(data,src);
     int ret = parseRtspMessage(&request, (char*)data, strlen(data));
     if(ret < 0) {
         createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 400, (char*)"Bad Request", 0, nullptr, nullptr, 0);
         output = serializeRtspMessage(&response, &ret);
     } else {
-        createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+        user = getOptionContent(request.options, (char*)"Authorization");
+        if(user != nullptr) {
+            auth = new FakeAuth(user, request.message.request.target);
+            if(auth->checkRoom() && auth->authorize()) {
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+            } else {
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+            }
+        } else {
+            createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+        }
         output = serializeRtspMessage(&response, &ret);
     }
     freeMessage(&request);
     freeMessage(&response);
+    delete auth;
     return ret;
 }
 

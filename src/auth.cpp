@@ -10,11 +10,14 @@ BaseAuth::BaseAuth(std::string token, std::string room) {
     std::istringstream ist(token);
     std::string tmp;
     while(ist >> tmp) {
-        std::cout << tmp << std::endl;
         words.push_back(tmp);
     }
     this->token = words[1];
     this->room = room;
+}
+
+FakeAuth::FakeAuth(std::string token, std::string room) : BaseAuth(token, room) {
+    
 }
 
 int FakeAuth::checkRoom() {

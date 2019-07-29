@@ -4,6 +4,7 @@
 #executable files
 *.exe
 *.out
+*.test
 ./bin
 
 #object files

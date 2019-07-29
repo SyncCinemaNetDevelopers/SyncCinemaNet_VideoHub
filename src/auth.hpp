@@ -21,6 +21,7 @@ namespace vserver {
 
     class FakeAuth : public BaseAuth {
     public:
+        FakeAuth(std::string token, std::string room);
         int checkRoom();
         int authorize();
     };
