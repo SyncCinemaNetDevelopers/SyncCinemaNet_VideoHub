@@ -1,3 +1,6 @@
+#ifndef SRC_UTILES_EXCEPTION_HPP
+#define SRC_UTILES_EXCEPTION_HPP
+
 #include <stdexcept>
 
 namespace vserver {
@@ -10,3 +13,5 @@ namespace vserver {
         int code;
     };
 }
+
+#endif

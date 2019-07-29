@@ -1,3 +1,6 @@
+#ifndef SRC_RTSP_HPP
+#define SRC_RTSP_HPP
+
 #include <string>
 extern "C" {
   #include "utils/rtsp-parser.h"
@@ -36,3 +39,5 @@ namespace vserver {
         int port;
     };
 }
+
+#endif

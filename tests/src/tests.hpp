@@ -1,3 +1,6 @@
+#ifndef TESTS_SRC_TESTS_HPP
+#define TESTS_SRC_TESTS_HPP
+
 #include <string>
 
 namespace vtests { 
@@ -6,7 +9,7 @@ namespace vtests {
         UnitTest(std::string selfName, std::string src, std::string target);
         int lo_send(int port, int len);
         void check_test();
-        
+
     private:
         std::string selfName;
         std::string src;
@@ -15,3 +18,5 @@ namespace vtests {
         int status;
     };
 }
+
+#endif

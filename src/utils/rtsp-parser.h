@@ -1,3 +1,6 @@
+#ifndef SRC_UTILES_RTSP_PARSER
+#define SRC_UTILES_RTSP_PARSER
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -64,3 +67,5 @@ char* getOptionContent(POPTION_ITEM optionsHead, char* option);
 void insertOption(POPTION_ITEM* optionsHead, POPTION_ITEM opt);
 void freeOptionList(POPTION_ITEM optionsHead);
 char* serializeRtspMessage(PRTSP_MESSAGE msg, int* serializedLength);
+
+#endif
