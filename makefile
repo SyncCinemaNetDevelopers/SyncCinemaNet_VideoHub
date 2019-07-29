@@ -38,16 +38,8 @@ compile: $(OBJ)
 rmo:
 	@rm -R obj && echo object remove : success
 
-build_tests: compile_tests $(patsubst %,test_%,$(TESTS)) delete_aux_files
-	
-compile_tests:
-	find ./tests/src -name "*.cpp" > ./tests/src/srcs.txt
+build_tests: $(patsubst %,test_%,$(TESTS))
 
 test_%:
-	@find ./tests/$@/src -name "*.cpp" > ./tests/$@/srcs.txt
-	@$(eval TESTSSRC := $(shell cat ./tests/$@/srcs.txt) $(shell cat ./tests/src/srcs.txt))
-	@$(CXX) $(TESTSSRC) -I./tests/$@ -I./tests/src -o ./tests/$@/$*.test && echo $*.test compile : success 
-	@rm ./tests/$@/srcs.txt; true
-
-delete_aux_files:
-	@rm ./tests/src/srcs.txt
+	@$(eval TESTSSRC := $(shell ./configure TESTSRC $*))
+	$(CXX) $(TESTSSRC) -I./tests/$@ -I./tests/src -o ./tests/$@/$*.test && echo $*.test compile : success 
