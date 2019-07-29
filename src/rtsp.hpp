@@ -20,9 +20,14 @@ namespace vserver {
   };
 
   class RTSPServer {
+    RTSPServer();
+    ~RTSPServer();
+    static RTSPServer* instance;
+
     char hostname[1024];
     int port;
   public:
+    static RTSPServer* getInstance();
     void setPortbase(int port);
     int MainLoop(void);
   };

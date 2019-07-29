@@ -13,6 +13,22 @@ extern int errno;
 
 using namespace vserver;
 
+RTSPServer* RTSPServer::instance = nullptr;
+
+RTSPServer::RTSPServer(){
+
+}
+
+RTSPServer::~RTSPServer(){
+  
+}
+
+RTSPServer* RTSPServer::getInstance(){
+  if(instance == nullptr)
+    instance = new RTSPServer();
+  return instance;
+}
+
 void RTSPServer::setPortbase(int port) {
   gethostname(this->hostname, sizeof(this->hostname));
   this->port = port;
