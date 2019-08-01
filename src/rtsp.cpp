@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include <errno.h>
 #include <iostream>
 #include <string.h>
@@ -108,8 +109,11 @@ RTSPConnect::~RTSPConnect() {
 }
 
 int RTSPServer::MainLoop(void) {
-    int sock, listener, ret;
+    int sock, efd, listener, ret;
     struct sockaddr_in addr;
+    struct epoll_event event[1], eread[1];
+    memset(event, 0, sizeof(event));
+    memset(eread, 0, sizeof(eread));
     try {
         listener = socket(AF_INET, SOCK_STREAM, 0);
         if (listener < 0) {
@@ -124,28 +128,44 @@ int RTSPServer::MainLoop(void) {
             throw ServerError("bind", errno);
         }
         listen(listener, 1024);
+        efd = epoll_create1(0);
+        if(efd < 0) {
+            throw ServerError("epoll", errno);
+        }
         while(true) {
             sock = accept(listener, nullptr, nullptr);
             if (sock < 0) {
                 throw ServerError("accept", errno);
             }
-            RTSPConnect *connect = new RTSPConnect(sock); // Храним в куче для вызова деструктора
-            while(true) {
-                ret = connect->readText();
-                if (ret < 0) {
-                    throw ServerError("read", -ret);
-                }
-                if (ret == 0) break;
-                ret = connect->handleData();
-                if(ret < 0) {
-                throw ServerError("handle", 0);
-                } 
-                ret = connect->writeText();
-                if(ret < 0) {
-                throw ServerError("write", -ret);
-                }
-            }     
-            delete connect;
+            event[0].data.fd = sock;
+            event[0].events = EPOLLIN;
+            ret = epoll_ctl(efd, EPOLL_CTL_ADD, sock, event);
+            if (ret < 0) {
+                throw ServerError("epoll_ctl", errno);
+            }
+            ret = epoll_wait(efd, eread, 1, 5000);
+            if (ret < 0) {
+                throw ServerError("epoll_wait", errno);
+            }
+            if (ret > 0) {
+                RTSPConnect *connect = new RTSPConnect(eread[0].data.fd);
+                while(true) {
+                    ret = connect->readText();
+                    if (ret < 0) {
+                        throw ServerError("read", -ret);
+                    }
+                    if (ret == 0) break;
+                    ret = connect->handleData();
+                    if(ret < 0) {
+                    throw ServerError("handle", 0);
+                    } 
+                    ret = connect->writeText();
+                    if(ret < 0) {
+                    throw ServerError("write", -ret);
+                    }
+                }     
+                delete connect;
+            }
         }
         close(listener);
     } catch(ServerError &e) {

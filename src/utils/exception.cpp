@@ -8,14 +8,13 @@ using namespace std;
 
 ServerError::ServerError(const char* const &message, int code) {
     this->message = message;
-    this->code = 0;
+    this->code = code;
 }
 
 void ServerError::print() {
     char buf[1024];
     if(code != 0) {
-        strerror_r(code, buf, sizeof(buf));
-        cout << message << ": " << buf << endl;
+        cout << message << ": " << strerror_r(code, buf, sizeof(buf)) << endl;
     } else {
         cout << message << endl;
     }
