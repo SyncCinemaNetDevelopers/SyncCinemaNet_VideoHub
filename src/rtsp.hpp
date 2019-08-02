@@ -30,6 +30,7 @@ namespace vserver {
         void setPortbase(int port);
         int MainLoop(void);
     private:
+        void sockHandler(void); 
         RTSPServer();
         ~RTSPServer();
     
@@ -37,6 +38,8 @@ namespace vserver {
         static RTSPServer* instance;
         char hostname[1024];
         int port;
+        int efd;
+        bool work;
     };
 }
 

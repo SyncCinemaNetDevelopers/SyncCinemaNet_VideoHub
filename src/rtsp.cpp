@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <string>
+#include <thread>
+
 extern int errno;
 
 using namespace vserver;
@@ -18,7 +20,7 @@ using namespace vserver;
 RTSPServer* RTSPServer::instance = nullptr;
 
 RTSPServer::RTSPServer(){
-
+    work = true;
 }
 
 RTSPServer::~RTSPServer(){
@@ -108,12 +110,47 @@ RTSPConnect::~RTSPConnect() {
     close(socket);
 }
 
-int RTSPServer::MainLoop(void) {
-    int sock, efd, listener, ret;
-    struct sockaddr_in addr;
-    struct epoll_event event[1], eread[1];
+void RTSPServer::sockHandler(void) {
+    int ret;
+    struct epoll_event event[1];
     memset(event, 0, sizeof(event));
-    memset(eread, 0, sizeof(eread));
+    try {
+        while(work) {
+            ret = epoll_wait(efd, event, 1, -1);
+            if (ret < 0) {
+                throw ServerError("epoll_wait", errno);
+            }
+            if (ret > 0) {
+                RTSPConnect *connect = new RTSPConnect(event[0].data.fd);
+                while(true) {
+                    ret = connect->readText();
+                    if (ret < 0) {
+                        throw ServerError("read", -ret);
+                    }
+                    if (ret == 0) break;
+                    ret = connect->handleData();
+                    if(ret < 0) {
+                        throw ServerError("handle", 0);
+                    } 
+                    ret = connect->writeText();
+                    if(ret < 0) {
+                        throw ServerError("write", -ret);
+                    }
+                }     
+                delete connect;
+            }
+        }
+    } catch(ServerError &e) {
+        e.print();
+        return;
+    }
+}
+
+int RTSPServer::MainLoop(void) {
+    int sock, listener, ret;
+    struct sockaddr_in addr;
+    struct epoll_event event[1];
+    memset(event, 0, sizeof(event));
     try {
         listener = socket(AF_INET, SOCK_STREAM, 0);
         if (listener < 0) {
@@ -132,6 +169,8 @@ int RTSPServer::MainLoop(void) {
         if(efd < 0) {
             throw ServerError("epoll", errno);
         }
+        std::thread handler(&RTSPServer::sockHandler, this);
+        handler.detach();
         while(true) {
             sock = accept(listener, nullptr, nullptr);
             if (sock < 0) {
@@ -143,32 +182,11 @@ int RTSPServer::MainLoop(void) {
             if (ret < 0) {
                 throw ServerError("epoll_ctl", errno);
             }
-            ret = epoll_wait(efd, eread, 1, 5000);
-            if (ret < 0) {
-                throw ServerError("epoll_wait", errno);
-            }
-            if (ret > 0) {
-                RTSPConnect *connect = new RTSPConnect(eread[0].data.fd);
-                while(true) {
-                    ret = connect->readText();
-                    if (ret < 0) {
-                        throw ServerError("read", -ret);
-                    }
-                    if (ret == 0) break;
-                    ret = connect->handleData();
-                    if(ret < 0) {
-                    throw ServerError("handle", 0);
-                    } 
-                    ret = connect->writeText();
-                    if(ret < 0) {
-                    throw ServerError("write", -ret);
-                    }
-                }     
-                delete connect;
-            }
         }
+        work = false;
         close(listener);
     } catch(ServerError &e) {
+        work = false;
         e.print();
         return -1;
     }
