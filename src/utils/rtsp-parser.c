@@ -154,7 +154,7 @@ int parseRtspMessage(PRTSP_MESSAGE msg, char* rtspMessage, int length) {
         // Response field - we don't care about it here
         statusStr = NULL;
     }
-    if (strcmp(protocol, "RTSP/1.1")) {
+    if (strcmp(protocol, "RTSP/1.0")) {
         exitCode = RTSP_ERROR_MALFORMED;
         goto ExitFailure;
     }

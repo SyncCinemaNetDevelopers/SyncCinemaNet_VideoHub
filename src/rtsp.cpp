@@ -76,19 +76,19 @@ int RTSPConnect::handleData() {
     strcpy(data,src);
     int ret = parseRtspMessage(&request, (char*)data, strlen(data));
     if(ret < 0) {
-        createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 400, (char*)"Bad Request", 0, nullptr, nullptr, 0);
+        createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 400, (char*)"Bad Request", 0, nullptr, nullptr, 0);
         output = serializeRtspMessage(&response, &ret);
     } else {
         user = getOptionContent(request.options, (char*)"Authorization");
         if(user != nullptr) {
             auth = new FakeAuth(user, request.message.request.target);
             if(auth->checkRoom() && auth->authorize()) {
-                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, nullptr, 0);
             } else {
-                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
             }
         } else {
-            createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+            createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
         }
         output = serializeRtspMessage(&response, &ret);
     }
