@@ -5,11 +5,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #include <errno.h>
 #include <iostream>
 #include <string.h>
 #include <stdlib.h>
 #include <string>
+#include <thread>
+
 extern int errno;
 
 using namespace vserver;
@@ -17,7 +20,7 @@ using namespace vserver;
 RTSPServer* RTSPServer::instance = nullptr;
 
 RTSPServer::RTSPServer(){
-
+    work = true;
 }
 
 RTSPServer::~RTSPServer(){
@@ -73,19 +76,19 @@ int RTSPConnect::handleData() {
     strcpy(data,src);
     int ret = parseRtspMessage(&request, (char*)data, strlen(data));
     if(ret < 0) {
-        createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 400, (char*)"Bad Request", 0, nullptr, nullptr, 0);
+        createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 400, (char*)"Bad Request", 0, nullptr, nullptr, 0);
         output = serializeRtspMessage(&response, &ret);
     } else {
         user = getOptionContent(request.options, (char*)"Authorization");
         if(user != nullptr) {
             auth = new FakeAuth(user, request.message.request.target);
             if(auth->checkRoom() && auth->authorize()) {
-                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, nullptr, 0);
             } else {
-                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
             }
         } else {
-            createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.1", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+            createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
         }
         output = serializeRtspMessage(&response, &ret);
     }
@@ -107,9 +110,47 @@ RTSPConnect::~RTSPConnect() {
     close(socket);
 }
 
+void RTSPServer::sockHandler(void) {
+    int ret;
+    struct epoll_event event[1];
+    memset(event, 0, sizeof(event));
+    try {
+        while(work) {
+            ret = epoll_wait(efd, event, 1, -1);
+            if (ret < 0) {
+                throw ServerError("epoll_wait", errno);
+            }
+            if (ret > 0) {
+                RTSPConnect *connect = new RTSPConnect(event[0].data.fd);
+                while(true) {
+                    ret = connect->readText();
+                    if (ret < 0) {
+                        throw ServerError("read", -ret);
+                    }
+                    if (ret == 0) break;
+                    ret = connect->handleData();
+                    if(ret < 0) {
+                        throw ServerError("handle", 0);
+                    } 
+                    ret = connect->writeText();
+                    if(ret < 0) {
+                        throw ServerError("write", -ret);
+                    }
+                }     
+                delete connect;
+            }
+        }
+    } catch(ServerError &e) {
+        e.print();
+        return;
+    }
+}
+
 int RTSPServer::MainLoop(void) {
     int sock, listener, ret;
     struct sockaddr_in addr;
+    struct epoll_event event[1];
+    memset(event, 0, sizeof(event));
     try {
         listener = socket(AF_INET, SOCK_STREAM, 0);
         if (listener < 0) {
@@ -124,31 +165,28 @@ int RTSPServer::MainLoop(void) {
             throw ServerError("bind", errno);
         }
         listen(listener, 1024);
+        efd = epoll_create1(0);
+        if(efd < 0) {
+            throw ServerError("epoll", errno);
+        }
+        std::thread handler(&RTSPServer::sockHandler, this);
+        handler.detach();
         while(true) {
             sock = accept(listener, nullptr, nullptr);
             if (sock < 0) {
                 throw ServerError("accept", errno);
             }
-            RTSPConnect *connect = new RTSPConnect(sock); // Храним в куче для вызова деструктора
-            while(true) {
-                ret = connect->readText();
-                if (ret < 0) {
-                    throw ServerError("read", -ret);
-                }
-                if (ret == 0) break;
-                ret = connect->handleData();
-                if(ret < 0) {
-                throw ServerError("handle", 0);
-                } 
-                ret = connect->writeText();
-                if(ret < 0) {
-                throw ServerError("write", -ret);
-                }
-            }     
-            delete connect;
+            event[0].data.fd = sock;
+            event[0].events = EPOLLIN;
+            ret = epoll_ctl(efd, EPOLL_CTL_ADD, sock, event);
+            if (ret < 0) {
+                throw ServerError("epoll_ctl", errno);
+            }
         }
+        work = false;
         close(listener);
     } catch(ServerError &e) {
+        work = false;
         e.print();
         return -1;
     }

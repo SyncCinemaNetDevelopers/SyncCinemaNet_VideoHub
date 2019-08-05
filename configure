@@ -13,6 +13,18 @@ then
     cd tests 
     res=$(find . -name "test_*" -type d)
     echo ${res//.\/test_/} 
+elif [ "$1" == "TESTSRC" ]
+then
+    if [ "$2" == "" ]
+    then
+        echo Empty test name
+    elif [ -d ./tests/test_$2 ]
+    then
+        res=$(find ./tests/test_$2/src -name "*.cpp")
+        echo $res $(find ./tests/src -name "*.cpp")
+    else
+        echo No such directory ./tests/test_$2 for test named $2
+    fi
 else
     echo Unknown variable $1
     exit 1
