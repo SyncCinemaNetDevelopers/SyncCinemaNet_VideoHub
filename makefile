@@ -33,7 +33,7 @@ $(OBJDIR)/%.o: src/%.c
 	$(CC) -c -I./$P $< -o $@
 
 compile: $(OBJ)
-	@$(CXX) $(OBJ) -o bin/$(NAME) -pthread && echo compile : success
+	@$(CXX) $(OBJ) -o bin/$(NAME) /usr/local/lib/libsdptransform.a -pthread && echo compile : success
 
 rmo:
 	@rm -R obj && echo object remove : success

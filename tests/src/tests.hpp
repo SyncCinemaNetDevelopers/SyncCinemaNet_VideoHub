@@ -9,6 +9,8 @@ namespace vtests {
         UnitTest(std::string selfName, std::string src, std::string target);
         int lo_send(int port, int len);
         void check_test();
+        void check_len();
+        static void replace(std::string& old, std::string from, std::string to);
 
     private:
         std::string selfName;

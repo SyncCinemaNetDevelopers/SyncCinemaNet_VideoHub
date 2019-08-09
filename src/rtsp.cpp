@@ -12,10 +12,13 @@
 #include <stdlib.h>
 #include <string>
 #include <thread>
+#include <sdptransform/sdptransform.hpp>
+#include <sdptransform/json.hpp>
 
 extern int errno;
 
 using namespace vserver;
+using namespace sdptransform;
 
 RTSPServer* RTSPServer::instance = nullptr;
 
@@ -25,6 +28,22 @@ RTSPServer::RTSPServer(){
 
 RTSPServer::~RTSPServer(){
   
+}
+
+static bool getSDP(std::string& rtsp, std::string& sdp) {
+    std::string delimiter = "\r\n\r\n";
+    std::string token;
+    size_t pos = 0;
+    if ((pos = rtsp.find(delimiter)) != std::string::npos) {
+        token = rtsp.substr(0, pos);
+        //std::cout << token.length() << " " << rtsp.length() << std::endl;
+        if ((token.length() + delimiter.length()) == rtsp.length())
+            return false;
+        sdp = rtsp.substr(pos, rtsp.length());
+        rtsp = token;
+        return true;
+    }
+    return false;
 }
 
 RTSPServer* RTSPServer::getInstance(){
@@ -65,12 +84,16 @@ int RTSPConnect::readText() {
 int RTSPConnect::handleData() {
     /*
     TODO:
-    1. Сделать отделение SDP от RTSP-заголовка
-    2. Сделать получение и обрабтку данных от веб-API
-    3. Добавить полезную нагрузку, сформированную в шаге 2
+    Сделать получение и обрабтку данных от веб-API
     */
     FakeAuth* auth;
-    const char* src = input.c_str();
+    std::string sdp, sdp_answer;
+    std::string rtsp = input;
+    bool sdata = getSDP(rtsp, sdp);
+    if(sdata) {
+        rtsp += "\r\n\r\n";
+    }
+    const char* src = rtsp.c_str();
     char* data = new char[strlen(src)];
     char* user;
     strcpy(data,src);
@@ -83,7 +106,13 @@ int RTSPConnect::handleData() {
         if(user != nullptr) {
             auth = new FakeAuth(user, request.message.request.target);
             if(auth->checkRoom() && auth->authorize()) {
-                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+                if(sdata) {
+                    json session = parse(sdp);
+                    sdp_answer = sdptransform::write(session);
+                    createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, (char*)sdp_answer.c_str(), sdp_answer.length());
+                } else {
+                    createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+                }
             } else {
                 createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
             }

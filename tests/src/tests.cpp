@@ -54,3 +54,21 @@ void UnitTest::check_test() {
         std::cout << "Test " << selfName << " failed with data " << dest << " and sample " << target << std::endl;
     }
 }
+
+void UnitTest::check_len() {
+    if(status < 0) {
+        std::cout << "Test " << selfName << " failed with error status " << status << std::endl;
+    } else if (dest.length() == target.length()) {
+        std::cout << "Test " << selfName << " OK.\n";
+    } else {
+        std::cout << "Test " << selfName << " failed with data " << dest << " and sample " << target << std::endl;
+    }
+}
+
+void UnitTest::replace(std::string& old, std::string from, std::string to) {
+    size_t start_pos = 0;
+    while((start_pos = old.find(from, start_pos)) != std::string::npos) {
+         old.replace(start_pos, from.length(), to);
+         start_pos += to.length();
+    }
+}
