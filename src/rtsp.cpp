@@ -1,5 +1,6 @@
 #include "rtsp.hpp"
 #include "auth.hpp"
+#include "rtp.hpp"
 #include "utils/exception.hpp"
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -23,6 +24,7 @@ using namespace sdptransform;
 RTSPServer* RTSPServer::instance = nullptr;
 
 RTSPServer::RTSPServer(){
+    RTPRoom::Init();
     work = true;
 }
 
