@@ -9,7 +9,8 @@ namespace vserver {
 
     typedef struct {
         std::string ip;
-        int port;
+        int audio_port;
+        int video_port;
 
     } RTPAddr;
 
@@ -26,7 +27,7 @@ namespace vserver {
     private:
         static std::vector<RTPRoom> rooms;
         std::string url;
-        json sdp;
+        json user, streamer, income;
     };
 
 }

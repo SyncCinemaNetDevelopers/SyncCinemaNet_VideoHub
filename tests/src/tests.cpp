@@ -62,6 +62,7 @@ void UnitTest::check_len() {
         std::cout << "Test " << selfName << " OK.\n";
     } else {
         std::cout << "Test " << selfName << " failed with data " << dest << " and sample " << target << std::endl;
+        std::cout << "Data len: " << dest.length() << " Target len: " << target.length() << std::endl;
     }
 }
 

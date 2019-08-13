@@ -110,6 +110,8 @@ int RTSPConnect::handleData() {
             if(auth->checkRoom() && auth->authorize()) {
                 if(sdata) {
                     json session = parse(sdp);
+                    RTPRoom room = RTPRoom(request.message.request.target, session);
+                    session = room.getInfo();
                     sdp_answer = sdptransform::write(session);
                     createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, (char*)sdp_answer.c_str(), sdp_answer.length());
                 } else {
