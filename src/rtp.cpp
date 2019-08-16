@@ -1,5 +1,4 @@
 #include "rtp.hpp"
-#include <iostream>
 
 using namespace vserver;
 
@@ -44,11 +43,8 @@ RTPRoom::RTPRoom(std::string url, json sdp) {
     spush = data;
     setValue(data, "direction", "recvonly");
     setValue(spush, "direction", "sendonly");
-    std::cout << "Входим тут"  << data << spush << std::endl;
     this->user = sdptransform::parse(data);
-    std::cout << "Помилка изыди" << std::endl;
     this->streamer = sdptransform::parse(spush);
-    std::cout << "Помилка изыди 2" << std::endl;
     this->income = sdp;
     rooms.push_back(*this);
 }
@@ -57,16 +53,13 @@ json RTPRoom::getInfo() {
     return this->user;
 }
 
-bool RTPRoom::getRoomByUrl(RTPRoom& rtp, std::string url) {
-    std::vector<RTPRoom>::iterator iter = RTPRoom::rooms.begin();
-    while(iter != RTPRoom::rooms.end()) {
-        if (url == (*iter).url) {
-            rtp = *iter;
-            return true;
+RTPRoom* RTPRoom::getRoomByUrl(std::string url) {
+    for(int i=0;i<rooms.size();i++) {
+        if (url == rooms[i].url) {
+            return &rooms[i];
         }
-        iter++;
     }
-    return false; 
+    return nullptr; 
 }
 
 void RTPRoom::Init() {

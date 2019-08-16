@@ -19,7 +19,7 @@
 extern int errno;
 
 using namespace vserver;
-using namespace sdptransform;
+using json = nlohmann::json;
 
 RTSPServer* RTSPServer::instance = nullptr;
 
@@ -89,6 +89,9 @@ int RTSPConnect::handleData() {
     Сделать получение и обрабтку данных от веб-API
     */
     FakeAuth* auth;
+    RTPRoom* room;
+    json session;
+    int type;
     std::string sdp, sdp_answer;
     std::string rtsp = input;
     bool sdata = getSDP(rtsp, sdp);
@@ -107,16 +110,28 @@ int RTSPConnect::handleData() {
         user = getOptionContent(request.options, (char*)"Authorization");
         if(user != nullptr) {
             auth = new FakeAuth(user, request.message.request.target);
-            if(auth->checkRoom() && auth->authorize()) {
-                if(sdata) {
-                    json session = parse(sdp);
-                    RTPRoom room = RTPRoom(request.message.request.target, session);
-                    session = room.getInfo();
-                    sdp_answer = sdptransform::write(session);
-                    createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, (char*)sdp_answer.c_str(), sdp_answer.length());
-                } else {
-                    createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, nullptr, 0);
+            if(auth->checkRoom() && (type = auth->authorize())) {
+                if(type == AUTH_USER) {
+                    room = RTPRoom::getRoomByUrl(request.message.request.target);
+                    if(room != nullptr) {
+                        session = room->getInfo();
+                    } else {
+                        // При реальной авторизации такая ситуация невозможна, данный код нужен только для фейковой авторизации
+                        createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
+                        output = serializeRtspMessage(&response, &ret);
+                        freeMessage(&request);
+                        freeMessage(&response);
+                        delete auth;
+                        return ret;
+                    }
+                } else if(sdata) {
+                    session = sdptransform::parse(sdp);
+                    room = new RTPRoom(request.message.request.target, session);
+                    session = room->getInfo();
+                    delete room;
                 }
+                sdp_answer = sdptransform::write(session);
+                createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 200, (char*)"OK", 0, nullptr, (char*)sdp_answer.c_str(), sdp_answer.length());
             } else {
                 createRtspResponse(&response, nullptr, 0, (char*)"RTSP/1.0", 403, (char*)"Forbidden", 0, nullptr, nullptr, 0);
             }

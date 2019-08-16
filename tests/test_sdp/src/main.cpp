@@ -43,10 +43,14 @@ m=audio 9002 RTP/SAVP 0 96
 m=video 9000 RTP/SAVP 97 98
 a=recvonly
 )";
-    std::string opt = "PLAY /fake/room RTSP/1.0\r\nAuthorization: Bearer fake_user\r\n\r\n";
+    std::string opt = "PLAY /fake/room RTSP/1.0\r\nAuthorization: Bearer fake_streamer\r\n\r\n";
     std::string ans = "RTSP/1.0 200 OK\r\n\r\n";
     UnitTest::replace(res, "\n", "\r\n");
     UnitTest unit("SDP", opt + prs, ans + res);
+    unit.lo_send(8000, 1024);
+    unit.check_len();
+    opt = "PLAY /fake/room RTSP/1.0\r\nAuthorization: Bearer fake_user\r\n\r\n";
+    unit = UnitTest("SDP user", opt, ans + res);
     unit.lo_send(8000, 1024);
     unit.check_len();
 }

@@ -18,7 +18,7 @@ namespace vserver {
     public:
         RTPRoom(std::string url, json sdp);
         json getInfo();
-        static bool getRoomByUrl(RTPRoom& rtp, std::string url);
+        static RTPRoom* getRoomByUrl(std::string url);
         static void Init();
 
     private:
